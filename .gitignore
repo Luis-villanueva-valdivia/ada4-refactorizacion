@@ -1,0 +1,26 @@
+# Clases compiladas
+out/
+bin/
+*.class
+
+# Datos que genera el programa al ejecutarse
+datos/
+**/herramientas.csv
+**/prestamos.csv
+# ...excepto las precondiciones de los casos del Anexo A
+!pruebas/casos/**/herramientas.csv
+!pruebas/casos/**/prestamos.csv
+
+# IDE
+.idea/
+*.iml
+.vscode/
+nbproject/
+.settings/
+.project
+.classpath
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini

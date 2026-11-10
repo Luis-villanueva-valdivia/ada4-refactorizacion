@@ -5,7 +5,6 @@ import gestor.prestamos.modelo.Herramienta;
 import gestor.prestamos.modelo.Prestamo;
 import gestor.prestamos.persistencia.RepositorioCsv;
 import gestor.prestamos.servicio.GestorPrestamos;
-
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
@@ -161,7 +160,13 @@ public final class MenuConsola {
         guardar();
         System.out.printf("  Herramienta '%s' añadida con ID %d.%n", nueva.getNombre(), nueva.getId());
     }
-
+    // ===== Técnica 1 · Extract Method (ISS-05) =====
+    // Antes: prestar() mostraba la lista de herramientas disponibles, pedía el ID y
+    // calculaba y pedía las fechas de préstamo y límite dentro del mismo método,
+    // junto con el registro del préstamo.
+    // Cambio: se extrajeron elegirHerramientaDisponible(), que muestra las disponibles
+    // y regresa el ID elegido, y pedirFechaInicio() y pedirFechaLimite(), que piden
+    // cada fecha con su valor por defecto; prestar() ahora solo los llama.
     private void prestar() {
         List<Herramienta> disponibles = gestor.herramientasDisponibles();
         if (disponibles.isEmpty()) {
@@ -170,13 +175,8 @@ public final class MenuConsola {
         }
         int id = elegirHerramientaDisponible(disponibles);
         String prestatario = entrada.pedirTexto("Nombre de quien la recibe: ");
-
-        LocalDate hoy = LocalDate.now();
-        LocalDate inicio = entrada.pedirFecha("Fecha de préstamo (AAAA-MM-DD, Enter = " + hoy + "): ", hoy);
-        LocalDate limitePorDefecto = inicio.plusDays(GestorPrestamos.DIAS_PRESTAMO_DEFECTO);
-        LocalDate limite = entrada.pedirFecha(
-                "Fecha límite (AAAA-MM-DD, Enter = " + limitePorDefecto + "): ", limitePorDefecto);
-
+        LocalDate inicio = pedirFechaInicio();
+        LocalDate limite = pedirFechaLimite(inicio);
         Prestamo nuevo = gestor.prestar(id, prestatario, inicio, limite);
         guardar();
         System.out.printf("  '%s' prestada a %s hasta %s.%n",
@@ -196,6 +196,29 @@ public final class MenuConsola {
         }
         List<Integer> ids = disponibles.stream().map(Herramienta::getId).toList();
         return entrada.pedirOpcion("ID de la herramienta: ", ids);
+    }
+
+    /**
+     * Pide la fecha de inicio del préstamo; con Enter se usa la fecha de hoy.
+     *
+     * @return fecha de inicio del préstamo
+     */
+    private LocalDate pedirFechaInicio() {
+        LocalDate hoy = LocalDate.now();
+        return entrada.pedirFecha("Fecha de préstamo (AAAA-MM-DD, Enter = " + hoy + "): ", hoy);
+    }
+
+    /**
+     * Pide la fecha límite del préstamo; con Enter se usa la fecha de inicio más
+     * {@link GestorPrestamos#DIAS_PRESTAMO_DEFECTO} días.
+     *
+     * @param inicio fecha de inicio del préstamo
+     * @return fecha límite de devolución
+     */
+    private LocalDate pedirFechaLimite(LocalDate inicio) {
+        LocalDate limitePorDefecto = inicio.plusDays(GestorPrestamos.DIAS_PRESTAMO_DEFECTO);
+        return entrada.pedirFecha(
+                "Fecha límite (AAAA-MM-DD, Enter = " + limitePorDefecto + "): ", limitePorDefecto);
     }
 
     private void devolver() {

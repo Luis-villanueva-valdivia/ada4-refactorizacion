@@ -168,12 +168,7 @@ public final class MenuConsola {
             System.out.println("\n  No hay herramientas disponibles para prestar.");
             return;
         }
-        System.out.println("\n  Herramientas disponibles:");
-        for (Herramienta herramienta : disponibles) {
-            System.out.printf("    %d. %s%n", herramienta.getId(), herramienta.getNombre());
-        }
-        List<Integer> ids = disponibles.stream().map(Herramienta::getId).toList();
-        int id = entrada.pedirOpcion("ID de la herramienta: ", ids);
+        int id = elegirHerramientaDisponible(disponibles);
         String prestatario = entrada.pedirTexto("Nombre de quien la recibe: ");
 
         LocalDate hoy = LocalDate.now();
@@ -186,6 +181,21 @@ public final class MenuConsola {
         guardar();
         System.out.printf("  '%s' prestada a %s hasta %s.%n",
                 nuevo.getHerramienta().getNombre(), nuevo.getPrestatario(), nuevo.getFechaLimite());
+    }
+
+    /**
+     * Muestra las herramientas disponibles y pide al usuario que elija una.
+     *
+     * @param disponibles herramientas que se pueden prestar (la lista no está vacía)
+     * @return ID de la herramienta elegida
+     */
+    private int elegirHerramientaDisponible(List<Herramienta> disponibles) {
+        System.out.println("\n  Herramientas disponibles:");
+        for (Herramienta herramienta : disponibles) {
+            System.out.printf("    %d. %s%n", herramienta.getId(), herramienta.getNombre());
+        }
+        List<Integer> ids = disponibles.stream().map(Herramienta::getId).toList();
+        return entrada.pedirOpcion("ID de la herramienta: ", ids);
     }
 
     private void devolver() {

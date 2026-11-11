@@ -114,15 +114,19 @@ public final class Prestamo {
         return getDiasRetrasoA(hoy) * precioPorDia;
     }
 
+       // ===== Técnica 6 · Remove Parameter (ISS-10) =====
+    // Antes: registrarDevolucion() recibía penalizacionPorDia,
+    // pero no utilizaba ese parámetro.
+    // Cambio: se eliminó penalizacionPorDia porque el método
+    // solamente necesita la fecha para registrar la devolución.
     /**
-     * Registra la devolución de la herramienta, calculando el retraso y la penalización.
+     * Registra la devolución de la herramienta.
      *
      * @param fecha fecha real de devolución; no puede ser anterior al préstamo
-     * @param penalizacionPorDia importe en euros por cada día de retraso
      * @throws IllegalStateException si el préstamo ya estaba devuelto
      * @throws IllegalArgumentException si la fecha es nula o anterior al préstamo
      */
-    public void registrarDevolucion(LocalDate fecha, double penalizacionPorDia) {
+    public void registrarDevolucion(LocalDate fecha) {
         if (!estaActivo()) {
             throw new IllegalStateException("El préstamo ya fue devuelto");
         }
@@ -134,7 +138,6 @@ public final class Prestamo {
         }
         this.fechaDevolucion = fecha;
     }
-
     /**
      * Establece los días de retraso registrados en la devolución.
      *

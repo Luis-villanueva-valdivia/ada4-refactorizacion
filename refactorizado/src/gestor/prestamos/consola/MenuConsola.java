@@ -160,13 +160,14 @@ public final class MenuConsola {
         guardar();
         System.out.printf("  Herramienta '%s' añadida con ID %d.%n", nueva.getNombre(), nueva.getId());
     }
+
     // ===== Técnica 1 · Extract Method (ISS-05) =====
-    // Antes: prestar() mostraba la lista de herramientas disponibles, pedía el ID y
-    // calculaba y pedía las fechas de préstamo y límite dentro del mismo método,
-    // junto con el registro del préstamo.
-    // Cambio: se extrajeron elegirHerramientaDisponible(), que muestra las disponibles
-    // y regresa el ID elegido, y pedirFechaInicio() y pedirFechaLimite(), que piden
-    // cada fecha con su valor por defecto; prestar() ahora solo los llama.
+    // Antes: prestar() hacía todo en un solo método de 25 líneas: mostraba y elegía
+    // la herramienta, pedía las fechas de préstamo y límite, y registraba el préstamo.
+    // Cambio: se extrajeron elegirHerramientaDisponible(), pedirFechaInicio(),
+    // pedirFechaLimite() y registrarPrestamo(); prestar() ahora solo comprueba que haya
+    // herramientas disponibles y llama a esos métodos en orden. Los mensajes y el orden
+    // en que se piden los datos no cambian.
     private void prestar() {
         List<Herramienta> disponibles = gestor.herramientasDisponibles();
         if (disponibles.isEmpty()) {
@@ -177,10 +178,7 @@ public final class MenuConsola {
         String prestatario = entrada.pedirTexto("Nombre de quien la recibe: ");
         LocalDate inicio = pedirFechaInicio();
         LocalDate limite = pedirFechaLimite(inicio);
-        Prestamo nuevo = gestor.prestar(id, prestatario, inicio, limite);
-        guardar();
-        System.out.printf("  '%s' prestada a %s hasta %s.%n",
-                nuevo.getHerramienta().getNombre(), nuevo.getPrestatario(), nuevo.getFechaLimite());
+        registrarPrestamo(id, prestatario, inicio, limite);
     }
 
     /**
@@ -219,6 +217,21 @@ public final class MenuConsola {
         LocalDate limitePorDefecto = inicio.plusDays(GestorPrestamos.DIAS_PRESTAMO_DEFECTO);
         return entrada.pedirFecha(
                 "Fecha límite (AAAA-MM-DD, Enter = " + limitePorDefecto + "): ", limitePorDefecto);
+    }
+
+    /**
+     * Registra el préstamo en el servicio, guarda los datos y muestra la confirmación.
+     *
+     * @param id ID de la herramienta que se presta
+     * @param prestatario nombre de quien recibe la herramienta
+     * @param inicio fecha de inicio del préstamo
+     * @param limite fecha límite de devolución
+     */
+    private void registrarPrestamo(int id, String prestatario, LocalDate inicio, LocalDate limite) {
+        Prestamo nuevo = gestor.prestar(id, prestatario, inicio, limite);
+        guardar();
+        System.out.printf("  '%s' prestada a %s hasta %s.%n",
+                nuevo.getHerramienta().getNombre(), nuevo.getPrestatario(), nuevo.getFechaLimite());
     }
 
     private void devolver() {

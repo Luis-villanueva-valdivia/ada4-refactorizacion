@@ -262,19 +262,25 @@ public final class MenuConsola {
         }
     }
 
+    // ===== Técnica 2 · Replace Temp with Query (ISS-06) =====
+    // Antes: verPrestamosActivos() guardaba LocalDate.now() en la variable temporal
+    // hoy y la usaba en tres lugares para calcular el estado, los días de retraso y la
+    // penalización estimada.
+    // Cambio: se eliminó la variable hoy y se sustituyó por el método de consulta
+    // fechaDeHoy(), que regresa la fecha actual. Así el cálculo no depende de una
+    // variable local y se puede extraer a otros métodos sin tener que pasarla.
     private void verPrestamosActivos() {
         List<Prestamo> activos = gestor.prestamosActivos();
         if (activos.isEmpty()) {
             System.out.println("\n  No hay préstamos activos.");
             return;
         }
-        LocalDate hoy = LocalDate.now();
         System.out.println("\n  Préstamos activos:");
         for (Prestamo p : activos) {
             String situacion;
-            if (p.estado(hoy) == EstadoPrestamo.ATRASADO) {
-                long dias = p.getDiasRetrasoA(hoy);
-                double estimada = p.calcularPenalizacion(hoy, GestorPrestamos.PENALIZACION_POR_DIA);
+            if (p.estado(fechaDeHoy()) == EstadoPrestamo.ATRASADO) {
+                long dias = p.getDiasRetrasoA(fechaDeHoy());
+                double estimada = p.calcularPenalizacion(fechaDeHoy(), GestorPrestamos.PENALIZACION_POR_DIA);
                 situacion = String.format("ATRASADO %d día(s), penalización estimada %.2f €", dias, estimada);
             } else {
                 situacion = "Al día, vence " + p.getFechaLimite();
@@ -282,6 +288,15 @@ public final class MenuConsola {
             System.out.printf("    %s - %s | desde %s | %s%n",
                     p.getHerramienta().getNombre(), p.getPrestatario(), p.getFechaPrestamo(), situacion);
         }
+    }
+
+    /**
+     * Regresa la fecha de hoy, con la que se calcula la situación de los préstamos activos.
+     *
+     * @return fecha actual del sistema
+     */
+    private LocalDate fechaDeHoy() {
+        return LocalDate.now();
     }
 
     private void verHistorial() {

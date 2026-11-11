@@ -8,7 +8,11 @@ import java.time.temporal.ChronoUnit;
  * el retraso acumulado y la penalización correspondiente.
  */
 public final class Prestamo {
-
+     // ===== Técnica 4  Move Method (ISS-08) =====
+    // Antes: GestorPrestamos dónde estaba el valor
+    // Cambio: Prestamo a dónde se movió y por qué el Gestor la conserva
+    /** Penalización en euros por cada día de retraso. */
+    public static final double PENALIZACION_POR_DIA = 2.0;
     private final int id;
     private final Herramienta herramienta;
     private final String prestatario;

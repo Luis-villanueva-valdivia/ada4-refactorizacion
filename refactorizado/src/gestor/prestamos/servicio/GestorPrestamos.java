@@ -19,8 +19,12 @@ public final class GestorPrestamos {
     /** Días de préstamo que se proponen por defecto. */
     public static final int DIAS_PRESTAMO_DEFECTO = 7;
 
+
+    // ===== Técnica 4 · Move Method (ISS-08) =====
+    // Antes: GestorPrestamos dónde estaba el valor
+    // Cambio: Prestamo a dónde se movió y por qué el Gestor la conserva
     /** Penalización en euros por cada día de retraso. */
-    public static final double PENALIZACION_POR_DIA = 2.0;
+    public static final double PENALIZACION_POR_DIA = Prestamo.PENALIZACION_POR_DIA;
 
     private final List<Herramienta> herramientas;
     private final List<Prestamo> prestamos;

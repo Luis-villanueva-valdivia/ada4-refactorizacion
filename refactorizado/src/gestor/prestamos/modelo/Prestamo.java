@@ -141,6 +141,18 @@ public final class Prestamo {
             throw new IllegalArgumentException("La devolución no puede ser anterior al préstamo");
         }
         this.fechaDevolucion = fecha;
+        registrarRetrasoYPenalizacion(fecha);
+    }
+    /**
+     * Calcula los días de retraso de la devolución y la penalización que le
+     * corresponde, y los guarda en el préstamo.
+     *
+     * @param fecha fecha real de devolución
+     */
+    private void registrarRetrasoYPenalizacion(LocalDate fecha) {
+        long retraso = Math.max(0, ChronoUnit.DAYS.between(fechaLimite, fecha));
+        this.diasRetraso = (int) retraso;
+        this.penalizacion = Math.round(retraso * PENALIZACION_POR_DIA * 100.0) / 100.0;
     }
     /**
      * Establece los días de retraso registrados en la devolución.

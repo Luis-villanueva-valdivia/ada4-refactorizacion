@@ -167,6 +167,11 @@ public final class GestorPrestamos {
         return nuevo;
     }
 
+    // ===== Técnica 4 · Move Method (ISS-08) =====
+    // Antes: devolver() calculaba aquí los días de retraso y la penalización
+    // usando la fecha límite del préstamo, y luego se los ponía con setters.
+    // Cambio: el cálculo se movió a Prestamo.registrarRetrasoYPenalizacion(),
+    // que se llama desde registrarDevolucion(). Aquí solo se busca el préstamo.
     /**
      * Registra la devolución de un préstamo activo y calcula su penalización.
      *
@@ -182,9 +187,6 @@ public final class GestorPrestamos {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No existe el préstamo con ID " + prestamoId));
         prestamo.registrarDevolucion(fecha);
-        long retraso = Math.max(0, java.time.temporal.ChronoUnit.DAYS.between(prestamo.getFechaLimite(), fecha));
-        prestamo.setDiasRetraso((int) retraso);
-        prestamo.setPenalizacion(Math.round(retraso * PENALIZACION_POR_DIA * 100.0) / 100.0);
         return prestamo;
     }
 

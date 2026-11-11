@@ -5,7 +5,6 @@ import gestor.prestamos.modelo.Herramienta;
 import gestor.prestamos.modelo.Prestamo;
 import gestor.prestamos.persistencia.RepositorioCsv;
 import gestor.prestamos.servicio.GestorPrestamos;
-
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
@@ -162,26 +161,73 @@ public final class MenuConsola {
         System.out.printf("  Herramienta '%s' añadida con ID %d.%n", nueva.getNombre(), nueva.getId());
     }
 
+    // ===== Técnica 1 · Extract Method (ISS-05) =====
+    // Antes: prestar() hacía todo en un solo método de 25 líneas: mostraba y elegía
+    // la herramienta, pedía las fechas de préstamo y límite, y registraba el préstamo.
+    // Cambio: se extrajeron elegirHerramientaDisponible(), pedirFechaInicio(),
+    // pedirFechaLimite() y registrarPrestamo(); prestar() ahora solo comprueba que haya
+    // herramientas disponibles y llama a esos métodos en orden. Los mensajes y el orden
+    // en que se piden los datos no cambian.
     private void prestar() {
         List<Herramienta> disponibles = gestor.herramientasDisponibles();
         if (disponibles.isEmpty()) {
             System.out.println("\n  No hay herramientas disponibles para prestar.");
             return;
         }
+        int id = elegirHerramientaDisponible(disponibles);
+        String prestatario = entrada.pedirTexto("Nombre de quien la recibe: ");
+        LocalDate inicio = pedirFechaInicio();
+        LocalDate limite = pedirFechaLimite(inicio);
+        registrarPrestamo(id, prestatario, inicio, limite);
+    }
+
+    /**
+     * Muestra las herramientas disponibles y pide al usuario que elija una.
+     *
+     * @param disponibles herramientas que se pueden prestar (la lista no está vacía)
+     * @return ID de la herramienta elegida
+     */
+    private int elegirHerramientaDisponible(List<Herramienta> disponibles) {
         System.out.println("\n  Herramientas disponibles:");
         for (Herramienta herramienta : disponibles) {
             System.out.printf("    %d. %s%n", herramienta.getId(), herramienta.getNombre());
         }
         List<Integer> ids = disponibles.stream().map(Herramienta::getId).toList();
-        int id = entrada.pedirOpcion("ID de la herramienta: ", ids);
-        String prestatario = entrada.pedirTexto("Nombre de quien la recibe: ");
+        return entrada.pedirOpcion("ID de la herramienta: ", ids);
+    }
 
+    /**
+     * Pide la fecha de inicio del préstamo; con Enter se usa la fecha de hoy.
+     *
+     * @return fecha de inicio del préstamo
+     */
+    private LocalDate pedirFechaInicio() {
         LocalDate hoy = LocalDate.now();
-        LocalDate inicio = entrada.pedirFecha("Fecha de préstamo (AAAA-MM-DD, Enter = " + hoy + "): ", hoy);
-        LocalDate limitePorDefecto = inicio.plusDays(GestorPrestamos.DIAS_PRESTAMO_DEFECTO);
-        LocalDate limite = entrada.pedirFecha(
-                "Fecha límite (AAAA-MM-DD, Enter = " + limitePorDefecto + "): ", limitePorDefecto);
+        return entrada.pedirFecha("Fecha de préstamo (AAAA-MM-DD, Enter = " + hoy + "): ", hoy);
+    }
 
+    /**
+     * Pide la fecha límite del préstamo; con Enter se usa la fecha de inicio más
+     * {@link GestorPrestamos#DIAS_PRESTAMO_DEFECTO} días.
+     *
+     * @param inicio fecha de inicio del préstamo
+     * @return fecha límite de devolución
+     */
+    private LocalDate pedirFechaLimite(LocalDate inicio) {
+        LocalDate limitePorDefecto = inicio.plusDays(GestorPrestamos.DIAS_PRESTAMO_DEFECTO);
+        return entrada.pedirFecha(
+                "Fecha límite (AAAA-MM-DD, Enter = " + limitePorDefecto + "): ", limitePorDefecto);
+    }
+
+    /**
+     * Registra el préstamo en el servicio, guarda los datos y muestra la confirmación.
+     *
+     * @param id ID de la herramienta que se presta
+     * @param prestatario nombre de quien recibe la herramienta
+     * @param inicio fecha de inicio del préstamo
+     * @param limite fecha límite de devolución
+     */
+    private void registrarPrestamo(int id, String prestatario, LocalDate inicio, LocalDate limite) {
         Prestamo nuevo = gestor.prestar(id, prestatario, inicio, limite);
         guardar();
         System.out.printf("  '%s' prestada a %s hasta %s.%n",

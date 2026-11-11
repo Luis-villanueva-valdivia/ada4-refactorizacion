@@ -19,8 +19,12 @@ public final class GestorPrestamos {
     /** Días de préstamo que se proponen por defecto. */
     public static final int DIAS_PRESTAMO_DEFECTO = 7;
 
+
+    // ===== Técnica 4 · Move Method (ISS-08) =====
+    // Antes: GestorPrestamos dónde estaba el valor
+    // Cambio: Prestamo a dónde se movió y por qué el Gestor la conserva
     /** Penalización en euros por cada día de retraso. */
-    public static final double PENALIZACION_POR_DIA = 2.0;
+    public static final double PENALIZACION_POR_DIA = Prestamo.PENALIZACION_POR_DIA;
 
     private final List<Herramienta> herramientas;
     private final List<Prestamo> prestamos;
@@ -163,9 +167,15 @@ public final class GestorPrestamos {
         return nuevo;
     }
 
+    // ===== Técnica 4 · Move Method (ISS-08) =====
+    // Antes: devolver() calculaba aquí los días de retraso y la penalización
+    // usando la fecha límite del préstamo, y luego se los ponía con setters.
+    // Cambio: el cálculo se movió a Prestamo.registrarRetrasoYPenalizacion(),
+    // que se llama desde registrarDevolucion(). Aquí solo se busca el préstamo.
     /**
-     * Registra la devolución de un préstamo activo y calcula su penalización.
-     *
+     * Registra la devolución de un préstamo activo. El préstamo calcula
+     * su retraso y su penalización.
+     * 
      * @param prestamoId identificador del préstamo
      * @param fecha fecha real de devolución
      * @return el préstamo actualizado
@@ -178,9 +188,6 @@ public final class GestorPrestamos {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No existe el préstamo con ID " + prestamoId));
         prestamo.registrarDevolucion(fecha);
-        long retraso = Math.max(0, java.time.temporal.ChronoUnit.DAYS.between(prestamo.getFechaLimite(), fecha));
-        prestamo.setDiasRetraso((int) retraso);
-        prestamo.setPenalizacion(Math.round(retraso * PENALIZACION_POR_DIA * 100.0) / 100.0);
         return prestamo;
     }
 

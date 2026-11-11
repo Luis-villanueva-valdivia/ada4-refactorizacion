@@ -8,7 +8,11 @@ import java.time.temporal.ChronoUnit;
  * el retraso acumulado y la penalización correspondiente.
  */
 public final class Prestamo {
-
+     // ===== Técnica 4  Move Method (ISS-08) =====
+    // Antes: GestorPrestamos dónde estaba el valor
+    // Cambio: Prestamo a dónde se movió y por qué el Gestor la conserva
+    /** Penalización en euros por cada día de retraso. */
+    public static final double PENALIZACION_POR_DIA = 2.0;
     private final int id;
     private final Herramienta herramienta;
     private final String prestatario;
@@ -119,9 +123,14 @@ public final class Prestamo {
     // pero no utilizaba ese parámetro.
     // Cambio: se eliminó penalizacionPorDia porque el método
     // solamente necesita la fecha para registrar la devolución.
+        // ===== Técnica 4 · Move Method (ISS-08) =====
+    // Antes: este método solo guardaba la fecha de devolución; el retraso y la
+    // penalización los calculaba GestorPrestamos.devolver().
+    // Cambio: ahora, después de guardar la fecha, llama a registrarRetrasoYPenalizacion()
+    // para que el mismo préstamo calcule y guarde esos valores.
     /**
-     * Registra la devolución de la herramienta.
-     *
+     * Registra la devolución de la herramienta y guarda los días de retraso
+     * y la penalización que le corresponden.
      * @param fecha fecha real de devolución; no puede ser anterior al préstamo
      * @throws IllegalStateException si el préstamo ya estaba devuelto
      * @throws IllegalArgumentException si la fecha es nula o anterior al préstamo
@@ -137,23 +146,24 @@ public final class Prestamo {
             throw new IllegalArgumentException("La devolución no puede ser anterior al préstamo");
         }
         this.fechaDevolucion = fecha;
-    }
-    /**
-     * Establece los días de retraso registrados en la devolución.
-     *
-     * @param diasRetraso días de retraso, no negativos
-     */
-    public void setDiasRetraso(int diasRetraso) {
-        this.diasRetraso = diasRetraso;
+        registrarRetrasoYPenalizacion(fecha);
     }
 
+    // ===== Técnica 4 · Move Method (ISS-08) =====
+    // Antes: este cálculo estaba en GestorPrestamos.devolver(), que le pedía la
+    // fecha límite al préstamo y luego le ponía el retraso y la penalización con setters.
+    // Cambio: se movió aquí porque solo usa datos del préstamo; la fórmula es la misma.
+    // Como ya nadie los usaba, se eliminaron setDiasRetraso() y setPenalizacion().
     /**
-     * Establece la penalización registrada en la devolución.
+     * Calcula los días de retraso de la devolución y la penalización que le
+     * corresponde, y los guarda en el préstamo.
      *
-     * @param penalizacion penalización en euros, no negativa
+     * @param fecha fecha real de devolución
      */
-    public void setPenalizacion(double penalizacion) {
-        this.penalizacion = penalizacion;
+    private void registrarRetrasoYPenalizacion(LocalDate fecha) {
+        long retraso = Math.max(0, ChronoUnit.DAYS.between(fechaLimite, fecha));
+        this.diasRetraso = (int) retraso;
+        this.penalizacion = Math.round(retraso * PENALIZACION_POR_DIA * 100.0) / 100.0;
     }
 
     /**

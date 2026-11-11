@@ -123,9 +123,14 @@ public final class Prestamo {
     // pero no utilizaba ese parámetro.
     // Cambio: se eliminó penalizacionPorDia porque el método
     // solamente necesita la fecha para registrar la devolución.
+        // ===== Técnica 4 · Move Method (ISS-08) =====
+    // Antes: este método solo guardaba la fecha de devolución; el retraso y la
+    // penalización los calculaba GestorPrestamos.devolver().
+    // Cambio: ahora, después de guardar la fecha, llama a registrarRetrasoYPenalizacion()
+    // para que el mismo préstamo calcule y guarde esos valores.
     /**
-     * Registra la devolución de la herramienta.
-     *
+     * Registra la devolución de la herramienta y guarda los días de retraso
+     * y la penalización que le corresponden.
      * @param fecha fecha real de devolución; no puede ser anterior al préstamo
      * @throws IllegalStateException si el préstamo ya estaba devuelto
      * @throws IllegalArgumentException si la fecha es nula o anterior al préstamo
@@ -143,6 +148,12 @@ public final class Prestamo {
         this.fechaDevolucion = fecha;
         registrarRetrasoYPenalizacion(fecha);
     }
+
+    // ===== Técnica 4 · Move Method (ISS-08) =====
+    // Antes: este cálculo estaba en GestorPrestamos.devolver(), que le pedía la
+    // fecha límite al préstamo y luego le ponía el retraso y la penalización con setters.
+    // Cambio: se movió aquí porque solo usa datos del préstamo; la fórmula es la misma.
+    // Como ya nadie los usaba, se eliminaron setDiasRetraso() y setPenalizacion().
     /**
      * Calcula los días de retraso de la devolución y la penalización que le
      * corresponde, y los guarda en el préstamo.
@@ -153,23 +164,6 @@ public final class Prestamo {
         long retraso = Math.max(0, ChronoUnit.DAYS.between(fechaLimite, fecha));
         this.diasRetraso = (int) retraso;
         this.penalizacion = Math.round(retraso * PENALIZACION_POR_DIA * 100.0) / 100.0;
-    }
-    /**
-     * Establece los días de retraso registrados en la devolución.
-     *
-     * @param diasRetraso días de retraso, no negativos
-     */
-    public void setDiasRetraso(int diasRetraso) {
-        this.diasRetraso = diasRetraso;
-    }
-
-    /**
-     * Establece la penalización registrada en la devolución.
-     *
-     * @param penalizacion penalización en euros, no negativa
-     */
-    public void setPenalizacion(double penalizacion) {
-        this.penalizacion = penalizacion;
     }
 
     /**

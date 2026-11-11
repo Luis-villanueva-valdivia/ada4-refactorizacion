@@ -173,8 +173,9 @@ public final class GestorPrestamos {
     // Cambio: el cálculo se movió a Prestamo.registrarRetrasoYPenalizacion(),
     // que se llama desde registrarDevolucion(). Aquí solo se busca el préstamo.
     /**
-     * Registra la devolución de un préstamo activo y calcula su penalización.
-     *
+     * Registra la devolución de un préstamo activo. El préstamo calcula
+     * su retraso y su penalización.
+     * 
      * @param prestamoId identificador del préstamo
      * @param fecha fecha real de devolución
      * @return el préstamo actualizado

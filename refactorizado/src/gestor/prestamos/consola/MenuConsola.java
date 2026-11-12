@@ -295,7 +295,7 @@ public final class MenuConsola {
     }
 
     private String describirAtraso(Prestamo p) {
-        long dias = p.getDiasRetraso(fechaDeHoy());
+        long dias = p.getDiasRetraso();
         double estimada = p.calcularPenalizacion(fechaDeHoy(), GestorPrestamos.PENALIZACION_POR_DIA);
         return String.format("ATRASADO %d día(s), penalización estimada %.2f €", dias, estimada);
     }

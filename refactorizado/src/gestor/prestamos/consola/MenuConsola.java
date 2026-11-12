@@ -285,7 +285,7 @@ public final class MenuConsola {
             String situacion = estaAtrasado(p)
                     ? describirAtraso(p)
                     : describirAlDia(p);
-            System.out.printf("  %s | %s | desde %s | %s%n",
+            System.out.printf("  %s - %s | desde %s | %s%n",
                     p.getHerramienta().getNombre(), p.getPrestatario(), p.getFechaPrestamo(), situacion);
         }
     }
@@ -295,7 +295,7 @@ public final class MenuConsola {
     }
 
     private String describirAtraso(Prestamo p) {
-        long dias = p.getDiasRetraso();
+        long dias = p.getDiasRetraso(fechaDeHoy());
         double estimada = p.calcularPenalizacion(fechaDeHoy(), GestorPrestamos.PENALIZACION_POR_DIA);
         return String.format("ATRASADO %d día(s), penalización estimada %.2f €", dias, estimada);
     }

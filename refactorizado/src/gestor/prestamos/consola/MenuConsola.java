@@ -10,36 +10,27 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map; 
 
+/**
+ * Menú principal de la aplicación. Muestra las opciones, pide los datos necesarios
+ * y delega las operaciones en el servicio. Tras cada cambio, guarda los datos.
+ */
 /**
  * Menú principal de la aplicación. Muestra las opciones, pide los datos necesarios
  * y delega las operaciones en el servicio. Tras cada cambio, guarda los datos.
  */
 public final class MenuConsola {
 
-    private static final String MENU = """
-
-            ========== GESTOR DE PRÉSTAMOS ==========
-              1. Ver herramientas y disponibilidad
-              2. Añadir herramienta
-              3. Prestar herramienta
-              4. Registrar devolución
-              5. Ver préstamos activos
-              6. Ver historial y penalizaciones
-              7. Dar de baja una herramienta
-              8. Reactivar herramienta
-              0. Salir
-            =========================================
-            """;
-
-    private static final List<Integer> OPCIONES = List.of(0, 1, 2, 3, 4, 5, 6, 7, 8);
-
     private final GestorPrestamos gestor;
     private final RepositorioCsv repositorio;
     private final Entrada entrada;
+    private final Map<Integer, OpcionMenu> opciones;
 
     /**
-     * Crea el menú con sus dependencias.
+     * Crea el menú con sus dependencias y registra las opciones disponibles.
      *
      * @param gestor servicio de préstamos
      * @param repositorio repositorio donde se guardan los datos
@@ -49,6 +40,26 @@ public final class MenuConsola {
         this.gestor = gestor;
         this.repositorio = repositorio;
         this.entrada = entrada;
+        this.opciones = inicializarOpciones();
+    }
+
+    /**
+     * Construye el mapa ordenado de opciones del menú mediante implementaciones polimórficas.
+     *
+     * @return mapa de número de opción a su implementación de {@link OpcionMenu}
+     */
+    private Map<Integer, OpcionMenu> inicializarOpciones() {
+        Map<Integer, OpcionMenu> mapa = new LinkedHashMap<>();
+        mapa.put(1, new OpcionListarHerramientas());
+        mapa.put(2, new OpcionAnadirHerramienta());
+        mapa.put(3, new OpcionPrestar());
+        mapa.put(4, new OpcionDevolver());
+        mapa.put(5, new OpcionVerPrestamosActivos());
+        mapa.put(6, new OpcionVerHistorial());
+        mapa.put(7, new OpcionDarDeBaja());
+        mapa.put(8, new OpcionReactivar());
+        mapa.put(0, new OpcionSalir());
+        return mapa;
     }
 
     /**
@@ -58,8 +69,8 @@ public final class MenuConsola {
     public void ejecutar() {
         boolean salir = false;
         while (!salir) {
-            System.out.println(MENU);
-            int opcion = entrada.pedirOpcion("Elige una opción: ", OPCIONES);
+            mostrarMenu();
+            int opcion = entrada.pedirOpcion("Elige una opción: ", new ArrayList<>(opciones.keySet()));
             try {
                 salir = ejecutarOpcion(opcion);
             } catch (IllegalArgumentException | IllegalStateException e) {
@@ -70,26 +81,154 @@ public final class MenuConsola {
     }
 
     /**
-     * Ejecuta la opción elegida.
+     * Imprime el encabezado y las opciones registradas en el mapa manteniendo su orden.
+     */
+    private void mostrarMenu() {
+        System.out.println("\n========== GESTOR DE PRÉSTAMOS ==========");
+        for (Map.Entry<Integer, OpcionMenu> entry : opciones.entrySet()) {
+            System.out.printf("  %d. %s%n", entry.getKey(), entry.getValue().descripcion());
+        }
+        System.out.println("=========================================\n");
+    }
+
+    /**
+     * Ejecuta la opción elegida delegando en su implementación polimórfica.
      *
      * @param opcion número de opción del menú
      * @return {@code true} si el usuario quiere salir de la aplicación
      */
+    // ==== Técnica 10 - Replace Conditional with Polymorphism (ISS-14) ====
+    // Antes: ejecutarOpcion() usaba un switch por número de opción, y tanto los textos
+    //        del menú como la lista de claves válidas se mantenían duplicados por separado.
+    // Cambio: se definió la interfaz OpcionMenu con una implementación por cada opción
+    //         registrada en un Map<Integer, OpcionMenu>, eliminando el switch.
     private boolean ejecutarOpcion(int opcion) {
-        switch (opcion) {
-            case 1 -> listarHerramientas();
-            case 2 -> anadirHerramienta();
-            case 3 -> prestar();
-            case 4 -> devolver();
-            case 5 -> verPrestamosActivos();
-            case 6 -> verHistorial();
-            case 7 -> darDeBaja();
-            case 8 -> reactivar();
-            default -> {
-                return true;
-            }
+        return opciones.get(opcion).ejecutar();
+    }
+
+    /** Opción 1: muestra el listado de herramientas registradas y su disponibilidad. */
+    private final class OpcionListarHerramientas implements OpcionMenu {
+        @Override
+        public String descripcion() {
+            return "Ver herramientas y disponibilidad";
         }
-        return false;
+
+        @Override
+        public boolean ejecutar() {
+            listarHerramientas();
+            return false;
+        }
+    }
+
+    /** Opción 2: registra una nueva herramienta en el sistema. */
+    private final class OpcionAnadirHerramienta implements OpcionMenu {
+        @Override
+        public String descripcion() {
+            return "Añadir herramienta";
+        }
+
+        @Override
+        public boolean ejecutar() {
+            anadirHerramienta();
+            return false;
+        }
+    }
+
+    /** Opción 3: registra el préstamo de una herramienta disponible. */
+    private final class OpcionPrestar implements OpcionMenu {
+        @Override
+        public String descripcion() {
+            return "Prestar herramienta";
+        }
+
+        @Override
+        public boolean ejecutar() {
+            prestar();
+            return false;
+        }
+    }
+
+    /** Opción 4: registra la devolución de un préstamo activo. */
+    private final class OpcionDevolver implements OpcionMenu {
+        @Override
+        public String descripcion() {
+            return "Registrar devolución";
+        }
+
+        @Override
+        public boolean ejecutar() {
+            devolver();
+            return false;
+        }
+    }
+
+    /** Opción 5: lista los préstamos activos y su estado actual. */
+    private final class OpcionVerPrestamosActivos implements OpcionMenu {
+        @Override
+        public String descripcion() {
+            return "Ver préstamos activos";
+        }
+
+        @Override
+        public boolean ejecutar() {
+            verPrestamosActivos();
+            return false;
+        }
+    }
+
+    /** Opción 6: muestra el historial de devoluciones y penalizaciones cobradas. */
+    private final class OpcionVerHistorial implements OpcionMenu {
+        @Override
+        public String descripcion() {
+            return "Ver historial y penalizaciones";
+        }
+
+        @Override
+        public boolean ejecutar() {
+            verHistorial();
+            return false;
+        }
+    }
+
+    /** Opción 7: da de baja una herramienta disponible. */
+    private final class OpcionDarDeBaja implements OpcionMenu {
+        @Override
+        public String descripcion() {
+            return "Dar de baja una herramienta";
+        }
+
+        @Override
+        public boolean ejecutar() {
+            darDeBaja();
+            return false;
+        }
+    }
+
+    /** Opción 8: reactiva una herramienta previamente dada de baja. */
+    private final class OpcionReactivar implements OpcionMenu {
+        @Override
+        public String descripcion() {
+            return "Reactivar herramienta";
+        }
+
+        @Override
+        public boolean ejecutar() {
+            reactivar();
+            return false;
+        }
+    }
+
+    /** Opción 0: finaliza la ejecución del menú principal. */
+    private final class OpcionSalir implements OpcionMenu {
+        @Override
+        public String descripcion() {
+            return "Salir";
+        }
+
+        @Override
+        public boolean ejecutar() {
+            return true;
+        }
     }
 
     private void listarHerramientas() {

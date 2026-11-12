@@ -1,6 +1,7 @@
 package gestor.prestamos.persistencia;
 
 import gestor.prestamos.modelo.Herramienta;
+import gestor.prestamos.modelo.PeriodoPrestamo;
 import gestor.prestamos.modelo.Prestamo;
 
 import java.io.IOException;
@@ -126,13 +127,24 @@ public final class RepositorioCsv {
 
     private Herramienta parsearHerramienta(String linea, int numeroLinea) throws IOException {
         List<String> campos = CsvUtil.dividir(linea);
-        if (campos.size() < CAMPOS_HERRAMIENTA || campos.size() > CAMPOS_HERRAMIENTA + 1) {
+
+        // =====TECNICA 3 Introduce Explaning VAriable (ISS-07) =====
+        /*La condicion del if y el dadaDeBaja eran expresiones dificiles de leer.
+        * Se guardan en variables con nombre que explican qué significan.
+        * Se conserva el && para no leer la columna 2 cuando la línea solo trae 2 campos.
+        */
+        boolean faltanCampos = campos.size() < CAMPOS_HERRAMIENTA;
+        boolean sobranCampos = campos.size() > CAMPOS_HERRAMIENTA + 1;
+
+        if (faltanCampos || sobranCampos) {
             throw error(ARCHIVO_HERRAMIENTAS, numeroLinea, "se esperaban " + CAMPOS_HERRAMIENTA + " campos");
         }
         try {
             int id = Integer.parseInt(campos.get(0).trim());
-            return new Herramienta(id, campos.get(1),
-                    campos.size() > CAMPOS_HERRAMIENTA && Boolean.parseBoolean(campos.get(2).trim()));
+            String nombre = campos.get(1);
+            boolean traeCampoDadaDeBaja = campos.size() > CAMPOS_HERRAMIENTA;
+            boolean dadaDeBaja = traeCampoDadaDeBaja && Boolean.parseBoolean(campos.get(2).trim());
+            return new Herramienta(id, nombre, dadaDeBaja);
         } catch (IllegalArgumentException e) {
             throw error(ARCHIVO_HERRAMIENTAS, numeroLinea, e.getMessage());
         }
@@ -157,7 +169,11 @@ public final class RepositorioCsv {
             LocalDate devolucion = textoDevolucion.isEmpty() ? null : LocalDate.parse(textoDevolucion);
             int diasRetraso = Integer.parseInt(campos.get(6).trim());
             double penalizacion = Double.parseDouble(campos.get(7).trim());
-            return new Prestamo(id, herramienta, campos.get(2), inicio, limite, devolucion, diasRetraso, penalizacion);
+            // ===== Técnica 8 · Introduce Parameter Object (ISS-12) =====
+            // Antes: inicio y limite se pasaban como dos parámetros al constructor de Prestamo.
+            // Cambio: se agrupan en un PeriodoPrestamo; el formato del CSV no cambia.
+            PeriodoPrestamo periodo = new PeriodoPrestamo(inicio, limite);
+            return new Prestamo(id, herramienta, campos.get(2), periodo, devolucion, diasRetraso, penalizacion);
         } catch (IllegalArgumentException | DateTimeException e) {
             throw error(ARCHIVO_PRESTAMOS, numeroLinea, e.getMessage());
         }

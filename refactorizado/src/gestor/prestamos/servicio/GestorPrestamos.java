@@ -1,6 +1,7 @@
 package gestor.prestamos.servicio;
 
 import gestor.prestamos.modelo.Herramienta;
+import gestor.prestamos.modelo.PeriodoPrestamo;
 import gestor.prestamos.modelo.Prestamo;
 
 import java.time.LocalDate;
@@ -19,8 +20,12 @@ public final class GestorPrestamos {
     /** Días de préstamo que se proponen por defecto. */
     public static final int DIAS_PRESTAMO_DEFECTO = 7;
 
+
+    // ===== Técnica 4 · Move Method (ISS-08) =====
+    // Antes: GestorPrestamos dónde estaba el valor
+    // Cambio: Prestamo a dónde se movió y por qué el Gestor la conserva
     /** Penalización en euros por cada día de retraso. */
-    public static final double PENALIZACION_POR_DIA = 2.0;
+    public static final double PENALIZACION_POR_DIA = Prestamo.PENALIZACION_POR_DIA;
 
     private final List<Herramienta> herramientas;
     private final List<Prestamo> prestamos;
@@ -114,6 +119,23 @@ public final class GestorPrestamos {
         return herramientas.stream().filter(h -> h.getId() == id).findFirst();
     }
 
+    // ===== Técnica 5 · Separate Query from Modifier (ISS-09) =====
+    // Antes: devolver() buscaba el préstamo directamente dentro de la operación
+    // que registraba la devolución.
+    // Cambio: se extrajo la búsqueda a buscarPrestamo(), una consulta sin efectos
+    // que permite localizar un préstamo sin modificar su estado.
+    /**
+     * Busca un préstamo por su identificador.
+     *
+     * @param prestamoId identificador del préstamo
+     * @return el préstamo si existe, o un Optional vacío
+     */
+    public Optional<Prestamo> buscarPrestamo(int prestamoId) {
+        return prestamos.stream()
+                .filter(p -> p.getId() == prestamoId)
+                .findFirst();
+    }
+
     /**
      * Busca el préstamo abierto de una herramienta, si lo tiene.
      *
@@ -137,18 +159,21 @@ public final class GestorPrestamos {
                 .toList();
     }
 
+    // ===== Técnica 8 · Introduce Parameter Object (ISS-12) =====
+    // Antes: prestar() recibía fechaPrestamo y fechaLimite como dos parámetros sueltos
+    // y los pasaba tal cual al constructor de Prestamo.
+    // Cambio: recibe un PeriodoPrestamo con las dos fechas y se lo entrega a Prestamo.
     /**
      * Registra el préstamo de una herramienta disponible.
      *
      * @param herramientaId identificador de la herramienta a prestar
      * @param prestatario persona que recibe la herramienta
-     * @param fechaPrestamo fecha del préstamo
-     * @param fechaLimite fecha máxima de devolución
+     * @param periodo fechas de préstamo y límite
      * @return el préstamo creado
      * @throws IllegalArgumentException si la herramienta no existe o los datos no son válidos
      * @throws IllegalStateException si la herramienta ya está prestada
      */
-    public Prestamo prestar(int herramientaId, String prestatario, LocalDate fechaPrestamo, LocalDate fechaLimite) {
+    public Prestamo prestar(int herramientaId, String prestatario, PeriodoPrestamo periodo) {
         Herramienta herramienta = buscarHerramienta(herramientaId)
                 .orElseThrow(() -> new IllegalArgumentException("No existe ninguna herramienta con ID " + herramientaId));
         if (herramienta.isDadaDeBaja()) {
@@ -158,30 +183,35 @@ public final class GestorPrestamos {
             throw new IllegalStateException("La herramienta '" + herramienta.getNombre() + "' ya está prestada");
         }
         int siguienteId = prestamos.stream().mapToInt(Prestamo::getId).max().orElse(0) + 1;
-        Prestamo nuevo = new Prestamo(siguienteId, herramienta, prestatario, fechaPrestamo, fechaLimite, null, 0, 0.0);
+        Prestamo nuevo = new Prestamo(siguienteId, herramienta, prestatario, periodo, null, 0, 0.0);
         prestamos.add(nuevo);
         return nuevo;
     }
 
+    // ===== Técnica 4 · Move Method (ISS-08) =====
+    // Antes: devolver() calculaba aquí los días de retraso y la penalización
+    // usando la fecha límite del préstamo, y luego se los ponía con setters.
+    // Cambio: el cálculo se movió a Prestamo.registrarRetrasoYPenalizacion(),
+    // que se llama desde registrarDevolucion(). Aquí solo se busca el préstamo.
+
+    // ===== Técnica 5 · Separate Query from Modifier (ISS-09) =====
+    // Antes: devolver() modificaba el préstamo y también lo devolvía para que
+    // el menú pudiera consultar los datos de la devolución.
+    // Cambio: ahora solo modifica el préstamo y utiliza buscarPrestamo()
+    // para localizarlo, sin devolver la entidad.
     /**
-     * Registra la devolución de un préstamo activo y calcula su penalización.
+     * Registra la devolución de un préstamo activo. El préstamo calcula
+     * su retraso y su penalización.
      *
      * @param prestamoId identificador del préstamo
      * @param fecha fecha real de devolución
-     * @return el préstamo actualizado
      * @throws IllegalArgumentException si el préstamo no existe o la fecha no es válida
      * @throws IllegalStateException si el préstamo ya estaba devuelto
      */
-    public Prestamo devolver(int prestamoId, LocalDate fecha) {
-        Prestamo prestamo = prestamos.stream()
-                .filter(p -> p.getId() == prestamoId)
-                .findFirst()
+    public void devolver(int prestamoId, LocalDate fecha) {
+        Prestamo prestamo = buscarPrestamo(prestamoId)
                 .orElseThrow(() -> new IllegalArgumentException("No existe el préstamo con ID " + prestamoId));
-        prestamo.registrarDevolucion(fecha, PENALIZACION_POR_DIA);
-        long retraso = Math.max(0, java.time.temporal.ChronoUnit.DAYS.between(prestamo.getFechaLimite(), fecha));
-        prestamo.setDiasRetraso((int) retraso);
-        prestamo.setPenalizacion(Math.round(retraso * PENALIZACION_POR_DIA * 100.0) / 100.0);
-        return prestamo;
+        prestamo.registrarDevolucion(fecha);
     }
 
     /**

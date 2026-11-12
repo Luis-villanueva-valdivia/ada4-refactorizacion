@@ -118,6 +118,23 @@ public final class GestorPrestamos {
         return herramientas.stream().filter(h -> h.getId() == id).findFirst();
     }
 
+    // ===== Técnica 5 · Separate Query from Modifier (ISS-09) =====
+    // Antes: devolver() buscaba el préstamo directamente dentro de la operación
+    // que registraba la devolución.
+    // Cambio: se extrajo la búsqueda a buscarPrestamo(), una consulta sin efectos
+    // que permite localizar un préstamo sin modificar su estado.
+    /**
+     * Busca un préstamo por su identificador.
+     *
+     * @param prestamoId identificador del préstamo
+     * @return el préstamo si existe, o un Optional vacío
+     */
+    public Optional<Prestamo> buscarPrestamo(int prestamoId) {
+        return prestamos.stream()
+                .filter(p -> p.getId() == prestamoId)
+                .findFirst();
+    }
+
     /**
      * Busca el préstamo abierto de una herramienta, si lo tiene.
      *
@@ -172,23 +189,25 @@ public final class GestorPrestamos {
     // usando la fecha límite del préstamo, y luego se los ponía con setters.
     // Cambio: el cálculo se movió a Prestamo.registrarRetrasoYPenalizacion(),
     // que se llama desde registrarDevolucion(). Aquí solo se busca el préstamo.
+
+    // ===== Técnica 5 · Separate Query from Modifier (ISS-09) =====
+    // Antes: devolver() modificaba el préstamo y también lo devolvía para que
+    // el menú pudiera consultar los datos de la devolución.
+    // Cambio: ahora solo modifica el préstamo y utiliza buscarPrestamo()
+    // para localizarlo, sin devolver la entidad.
     /**
      * Registra la devolución de un préstamo activo. El préstamo calcula
      * su retraso y su penalización.
-     * 
+     *
      * @param prestamoId identificador del préstamo
      * @param fecha fecha real de devolución
-     * @return el préstamo actualizado
      * @throws IllegalArgumentException si el préstamo no existe o la fecha no es válida
      * @throws IllegalStateException si el préstamo ya estaba devuelto
      */
-    public Prestamo devolver(int prestamoId, LocalDate fecha) {
-        Prestamo prestamo = prestamos.stream()
-                .filter(p -> p.getId() == prestamoId)
-                .findFirst()
+    public void devolver(int prestamoId, LocalDate fecha) {
+        Prestamo prestamo = buscarPrestamo(prestamoId)
                 .orElseThrow(() -> new IllegalArgumentException("No existe el préstamo con ID " + prestamoId));
         prestamo.registrarDevolucion(fecha);
-        return prestamo;
     }
 
     /**

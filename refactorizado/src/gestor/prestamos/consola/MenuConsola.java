@@ -262,13 +262,18 @@ public final class MenuConsola {
         }
     }
 
-    // ===== Técnica 2 · Replace Temp with Query (ISS-06) =====
+// ==== Técnica 2 - Replace Temp with Query (ISS-06) ====
     // Antes: verPrestamosActivos() guardaba LocalDate.now() en la variable temporal
     // hoy y la usaba en tres lugares para calcular el estado, los días de retraso y la
     // penalización estimada.
     // Cambio: se eliminó la variable hoy y se sustituyó por el método de consulta
     // fechaDeHoy(), que regresa la fecha actual. Así el cálculo no depende de una
     // variable local y se puede extraer a otros métodos sin tener que pasarla.
+    // ==== Técnica 9 - Decompose Conditional (ISS-13) ====
+    // Antes: el bucle mezclaba en un if/else la condición de atraso, el cálculo de
+    // días y penalización estimada, y el formateo del texto de situación.
+    // Cambio: se extrajeron la condición y ambas ramas a métodos privados con
+    // intención clara (estaAtrasado, describirAtraso y describirAlDia).
     private void verPrestamosActivos() {
         List<Prestamo> activos = gestor.prestamosActivos();
         if (activos.isEmpty()) {
@@ -277,17 +282,26 @@ public final class MenuConsola {
         }
         System.out.println("\n  Préstamos activos:");
         for (Prestamo p : activos) {
-            String situacion;
-            if (p.estado(fechaDeHoy()) == EstadoPrestamo.ATRASADO) {
-                long dias = p.getDiasRetrasoA(fechaDeHoy());
-                double estimada = p.calcularPenalizacion(fechaDeHoy(), GestorPrestamos.PENALIZACION_POR_DIA);
-                situacion = String.format("ATRASADO %d día(s), penalización estimada %.2f €", dias, estimada);
-            } else {
-                situacion = "Al día, vence " + p.getFechaLimite();
-            }
-            System.out.printf("    %s - %s | desde %s | %s%n",
+            String situacion = estaAtrasado(p)
+                    ? describirAtraso(p)
+                    : describirAlDia(p);
+            System.out.printf("  %s | %s | desde %s | %s%n",
                     p.getHerramienta().getNombre(), p.getPrestatario(), p.getFechaPrestamo(), situacion);
         }
+    }
+
+    private boolean estaAtrasado(Prestamo p) {
+        return p.estado(fechaDeHoy()) == EstadoPrestamo.ATRASADO;
+    }
+
+    private String describirAtraso(Prestamo p) {
+        long dias = p.getDiasRetraso(fechaDeHoy());
+        double estimada = p.calcularPenalizacion(fechaDeHoy(), GestorPrestamos.PENALIZACION_POR_DIA);
+        return String.format("ATRASADO %d día(s), penalización estimada %.2f €", dias, estimada);
+    }
+
+    private String describirAlDia(Prestamo p) {
+        return "Al día, vence " + p.getFechaLimite();
     }
 
     /**

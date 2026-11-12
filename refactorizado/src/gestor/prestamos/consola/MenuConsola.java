@@ -2,6 +2,7 @@ package gestor.prestamos.consola;
 
 import gestor.prestamos.modelo.EstadoPrestamo;
 import gestor.prestamos.modelo.Herramienta;
+import gestor.prestamos.modelo.PeriodoPrestamo;
 import gestor.prestamos.modelo.Prestamo;
 import gestor.prestamos.persistencia.RepositorioCsv;
 import gestor.prestamos.servicio.GestorPrestamos;
@@ -178,7 +179,12 @@ public final class MenuConsola {
         String prestatario = entrada.pedirTexto("Nombre de quien la recibe: ");
         LocalDate inicio = pedirFechaInicio();
         LocalDate limite = pedirFechaLimite(inicio);
-        registrarPrestamo(id, prestatario, inicio, limite);
+        // ===== Técnica 8 · Introduce Parameter Object (ISS-12) =====
+        // Antes: inicio y limite se pasaban sueltos a registrarPrestamo().
+        // Cambio: se agrupan en un PeriodoPrestamo. Si el límite es anterior al préstamo,
+        // se muestra el mismo mensaje de error que antes.
+        PeriodoPrestamo periodo = new PeriodoPrestamo(inicio, limite);
+        registrarPrestamo(id, prestatario, periodo);
     }
 
     /**
@@ -219,16 +225,18 @@ public final class MenuConsola {
                 "Fecha límite (AAAA-MM-DD, Enter = " + limitePorDefecto + "): ", limitePorDefecto);
     }
 
+    // ===== Técnica 8 · Introduce Parameter Object (ISS-12) =====
+    // Antes: registrarPrestamo() recibía inicio y limite como dos parámetros.
+    // Cambio: recibe un PeriodoPrestamo y se lo pasa a GestorPrestamos.prestar().
     /**
      * Registra el préstamo en el servicio, guarda los datos y muestra la confirmación.
      *
      * @param id ID de la herramienta que se presta
      * @param prestatario nombre de quien recibe la herramienta
-     * @param inicio fecha de inicio del préstamo
-     * @param limite fecha límite de devolución
+     * @param periodo fechas de préstamo y límite
      */
-    private void registrarPrestamo(int id, String prestatario, LocalDate inicio, LocalDate limite) {
-        Prestamo nuevo = gestor.prestar(id, prestatario, inicio, limite);
+    private void registrarPrestamo(int id, String prestatario, PeriodoPrestamo periodo) {
+        Prestamo nuevo = gestor.prestar(id, prestatario, periodo);
         guardar();
         System.out.printf("  '%s' prestada a %s hasta %s.%n",
                 nuevo.getHerramienta().getNombre(), nuevo.getPrestatario(), nuevo.getFechaLimite());

@@ -1,6 +1,7 @@
 package gestor.prestamos.servicio;
 
 import gestor.prestamos.modelo.Herramienta;
+import gestor.prestamos.modelo.PeriodoPrestamo;
 import gestor.prestamos.modelo.Prestamo;
 
 import java.time.LocalDate;
@@ -141,18 +142,21 @@ public final class GestorPrestamos {
                 .toList();
     }
 
+    // ===== Técnica 8 · Introduce Parameter Object (ISS-12) =====
+    // Antes: prestar() recibía fechaPrestamo y fechaLimite como dos parámetros sueltos
+    // y los pasaba tal cual al constructor de Prestamo.
+    // Cambio: recibe un PeriodoPrestamo con las dos fechas y se lo entrega a Prestamo.
     /**
      * Registra el préstamo de una herramienta disponible.
      *
      * @param herramientaId identificador de la herramienta a prestar
      * @param prestatario persona que recibe la herramienta
-     * @param fechaPrestamo fecha del préstamo
-     * @param fechaLimite fecha máxima de devolución
+     * @param periodo fechas de préstamo y límite
      * @return el préstamo creado
      * @throws IllegalArgumentException si la herramienta no existe o los datos no son válidos
      * @throws IllegalStateException si la herramienta ya está prestada
      */
-    public Prestamo prestar(int herramientaId, String prestatario, LocalDate fechaPrestamo, LocalDate fechaLimite) {
+    public Prestamo prestar(int herramientaId, String prestatario, PeriodoPrestamo periodo) {
         Herramienta herramienta = buscarHerramienta(herramientaId)
                 .orElseThrow(() -> new IllegalArgumentException("No existe ninguna herramienta con ID " + herramientaId));
         if (herramienta.isDadaDeBaja()) {
@@ -162,7 +166,7 @@ public final class GestorPrestamos {
             throw new IllegalStateException("La herramienta '" + herramienta.getNombre() + "' ya está prestada");
         }
         int siguienteId = prestamos.stream().mapToInt(Prestamo::getId).max().orElse(0) + 1;
-        Prestamo nuevo = new Prestamo(siguienteId, herramienta, prestatario, fechaPrestamo, fechaLimite, null, 0, 0.0);
+        Prestamo nuevo = new Prestamo(siguienteId, herramienta, prestatario, periodo, null, 0, 0.0);
         prestamos.add(nuevo);
         return nuevo;
     }

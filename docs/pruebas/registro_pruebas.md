@@ -3,9 +3,9 @@
 **Issue:** ISS-04 · Ejecutar las pruebas del Anexo A sobre el proyecto original  
 **Fecha de ejecución:** 11/11/2026  
 **Versión probada:** `original/`  
-**Resultado global:** 42 de 44 casos pasan; 2 casos no pasan por inconsistencias en sus archivos de precondición.
+**Resultado global:** 44 de 44 casos pasan.
 
-Este registro documenta la línea base del programa original. Los 44 casos se ejecutaron sobre `original/` el 11/11/2026. Durante la revisión del 12/11/2026 se detectó que CP-03-04 y CP-04-08 no tenían precondiciones que permitieran comprobar sus resultados esperados. Se reflejan como *No pasa* con el comportamiento observado. La columna **Después (refactorizado)** se deja vacía para que sea completada en la ISS-15.
+Este registro documenta la línea base del programa original. Los 44 casos se ejecutaron sobre `original/` el 11/11/2026. Durante la revisión del 12/11/2026 se detectó que CP-03-04 y CP-04-08 no tenían precondiciones que permitieran comprobar sus resultados esperados. Ese mismo día se corrigieron sus archivos de precondición (PR #28) y se volvieron a ejecutar. La columna **Después (refactorizado)** se deja vacía para que sea completada en la ISS-15.
 
 ## Pruebas generales
 
@@ -46,7 +46,7 @@ Este registro documenta la línea base del programa original. Los 44 casos se ej
 | CP-03-01 | Sin herramientas disponibles | `3` | Muestra «No hay herramientas disponibles para prestar». | Pasa — 11/11/2026 | |
 | CP-03-02 | Taladro disponible | `3`, `1`, `Ana`, Enter, Enter | La fecha de inicio es hoy (`2026-11-11`) y la fecha límite es hoy + 7 días (`2026-11-18`). | Pasa — 11/11/2026 | |
 | CP-03-03 | Taladro disponible | `3`, `1`, `Ana`, `2026-11-01`, `2026-11-08` | Se guardan exactamente las fechas indicadas. | Pasa — 11/11/2026 | |
-| CP-03-04 | Archivo actual: solo está registrada Taladro, que se encuentra prestada. No hay otra herramienta disponible. | `3` y después intentar introducir el ID `1` | Taladro no aparece; si existe otra herramienta disponible, introducir el ID `1` debe mostrar «Opción no válida.». | No pasa — 12/11/2026: muestra «No hay herramientas disponibles para prestar.» y vuelve al menú; no solicita un ID. La precondición actual no permite comprobar el rechazo de un ID inválido. | |
+| CP-03-04 | Taladro prestada; Escalera disponible. | `3` y después intentar introducir el ID `1` | Taladro no aparece; si se introduce su ID: «Opción no válida.». | Pasa — 12/11/2026: solo lista «2. Escalera» y con el ID `1` muestra «Opción no válida.». | |
 | CP-03-05 | Taladro disponible | `3`, `1`, entrada vacía | Muestra «El campo no puede estar vacío». | Pasa — 11/11/2026 | |
 | CP-03-06 | Taladro disponible | `3`, `1`, `Ana`, `01/11/2026` | Muestra «Formato inválido. Usa AAAA-MM-DD». | Pasa — 11/11/2026 | |
 | CP-03-07 | Taladro disponible | `3`, `1`, `Ana`, `2026-11-05`, `2026-11-01` | Muestra «La fecha límite no puede ser anterior al préstamo» y no guarda el préstamo. | Pasa — 11/11/2026 | |
@@ -63,7 +63,7 @@ Este registro documenta la línea base del programa original. Los 44 casos se ej
 | CP-04-05 | Fecha de inicio `2026-11-05` | `4`, `1`, `2026-11-01` | Muestra «La devolución no puede ser anterior al préstamo» y el préstamo sigue activo. | Pasa — 11/11/2026 | |
 | CP-04-06 | Préstamo activo con ID 1 | `4`, `5` | Muestra «Opción no válida». | Pasa — 11/11/2026 | |
 | CP-04-07 | Préstamo activo; fecha de préstamo anterior o igual al día de ejecución | `4`, `1`, Enter | La fecha de devolución corresponde a hoy (`2026-11-11`); el retraso se calcula con respecto a la fecha límite del préstamo. | Pasa — 11/11/2026 | |
-| CP-04-08 | El caso declara un préstamo devuelto, pero el `prestamos.csv` actual tiene `fecha_devolucion` vacía; el programa lo considera activo. | `4` | El préstamo devuelto no aparece en la lista; si no hay otros préstamos activos, muestra «No hay préstamos pendientes de devolución.». | No pasa — 12/11/2026: el préstamo ID 1 aparece en la lista de pendientes («1. Taladro - Ana (límite 2026-11-08)»). La precondición actual conserva el préstamo como activo. | |
+| CP-04-08 | Préstamo ya devuelto (`fecha_devolucion` 2026-11-05). | `4` | El préstamo devuelto no aparece en la lista; si no hay otros préstamos activos, muestra «No hay préstamos pendientes de devolución.». | Pasa — 12/11/2026: muestra «No hay préstamos pendientes de devolución.». | |
 
 ## Opción 5 — Consultar préstamos activos
 
@@ -105,16 +105,15 @@ Este registro documenta la línea base del programa original. Los 44 casos se ej
 
 | Resultado | Cantidad |
 |---|---:|
-| Pasa | 42 |
-| No pasa | 2 |
+| Pasa | 44 |
+| No pasa | 0 |
 | Total ejecutado | 44 |
 
 **Observaciones:**
 - Las pruebas se ejecutaron sobre `original/`; no se modificó el proyecto original.
 - CP-G-02 se ejecutó cerrando la entrada estándar para comprobar el comportamiento ante EOF.
 - CP-G-03 se ejecutó en dos ejecuciones consecutivas, conservando los archivos de `datos/` entre ambas.
-- CP-03-04 no puede comprobar el rechazo de un ID inválido con los archivos actuales: Taladro es la única herramienta y está prestada, por lo que el programa no solicita un ID. La corrección de `herramientas.csv` corresponde a quien mantiene los casos de ISS-03.
-- CP-04-08 declara un préstamo devuelto, pero el `prestamos.csv` actual deja `fecha_devolucion` vacía. El préstamo aparece como pendiente. La corrección de ese archivo corresponde a quien mantiene los casos de ISS-03.
+- CP-03-04 y CP-04-08 se corrigieron en el PR #28 y se volvieron a ejecutar el 12/11/2026.
 - CP-G-01 registra el mensaje exacto «Opción no válida.»; el `LEEME.md` del caso debe sincronizarse por su responsable de ISS-03.
 - CP-03-02, CP-04-07 y CP-05-03 dependen de la fecha de ejecución. Se consideró el día 11/11/2026; para CP-05-03 se utilizó como fecha límite `2026-11-05`, seis días antes.
 - La columna **Después (refactorizado)** permanece vacía para la ISS-15.

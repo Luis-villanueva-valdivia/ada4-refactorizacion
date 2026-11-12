@@ -234,6 +234,11 @@ public final class MenuConsola {
                 nuevo.getHerramienta().getNombre(), nuevo.getPrestatario(), nuevo.getFechaLimite());
     }
 
+    // ===== Técnica 5 · Separate Query from Modifier (ISS-09) =====
+    // Antes: devolver() recibía el préstamo actualizado desde el gestor
+    // y utilizaba ese objeto para mostrar los días de retraso y la penalización.
+    // Cambio: primero llama al modificador devolver() y después utiliza
+    // buscarPrestamo() para consultar los datos del préstamo actualizado.
     private void devolver() {
         List<Prestamo> activos = gestor.prestamosActivos();
         if (activos.isEmpty()) {
@@ -251,7 +256,9 @@ public final class MenuConsola {
         LocalDate hoy = LocalDate.now();
         LocalDate fecha = entrada.pedirFecha("Fecha de devolución (AAAA-MM-DD, Enter = " + hoy + "): ", hoy);
 
-        Prestamo devuelto = gestor.devolver(id, fecha);
+        gestor.devolver(id, fecha);
+        Prestamo devuelto = gestor.buscarPrestamo(id).orElseThrow();
+
         guardar();
         System.out.println("  Devolución registrada.");
         if (devuelto.getDiasRetraso() > 0) {

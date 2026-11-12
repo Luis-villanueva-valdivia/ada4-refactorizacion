@@ -18,10 +18,7 @@ import java.util.Map;
  * Menú principal de la aplicación. Muestra las opciones, pide los datos necesarios
  * y delega las operaciones en el servicio. Tras cada cambio, guarda los datos.
  */
-/**
- * Menú principal de la aplicación. Muestra las opciones, pide los datos necesarios
- * y delega las operaciones en el servicio. Tras cada cambio, guarda los datos.
- */
+
 public final class MenuConsola {
 
     private final GestorPrestamos gestor;
@@ -97,7 +94,7 @@ public final class MenuConsola {
      * @param opcion número de opción del menú
      * @return {@code true} si el usuario quiere salir de la aplicación
      */
-    // ==== Técnica 10 - Replace Conditional with Polymorphism (ISS-14) ====
+    // ===== Técnica 10 · Replace Conditional with Polymorphism (ISS-14) =====
     // Antes: ejecutarOpcion() usaba un switch por número de opción, y tanto los textos
     //        del menú como la lista de claves válidas se mantenían duplicados por separado.
     // Cambio: se definió la interfaz OpcionMenu con una implementación por cada opción
